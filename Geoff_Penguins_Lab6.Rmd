@@ -50,3 +50,76 @@ penguins2 <- penguins %>%
   filter(sex == "FEMALE")
 ```
 
+EXploratory Graphs and Levene's test for equal variances
+
+```{r}
+
+hists <- ggplot(penguins2, aes(x = flipper_length)) +
+  geom_histogram(aes(fill = common_name)) +
+  facet_wrap(~ common_name, scale = "free")
+
+hists
+
+qqs <- ggplot(penguins2, aes(sample = flipper_length)) +
+  geom_qq(aes(color = common_name)) +
+  facet_wrap(~ common_name, scale = "free")
+
+qqs
+
+# Based on qq-plots and histograms, observations for each group appear to be normally distributed. Also, n > 30 for all groups so according to CLT means will be normally distributed.
+
+```
+
+Let's evaluate 'dem variances and perform 'dat Levene's Test for equal variances homie!
+
+```{r}
+
+# If the largest sample varianes is < 4x greater than the smallest sample variance, then these are "cose enough" to consider variances equal
+
+variances <- penguins2 %>% 
+  group_by(common_name) %>% 
+  summarize(
+    variance = var(flipper_length)
+  )
+
+variances # The largest variance (33.1) is definitely not larger than 4x greater than the smallest variance (15.2)
+
+# Levene's Test (since we have more than 2 variables)
+#leveneTest function in the 'car' package
+
+levene_penguin <- leveneTest(flipper_length ~ common_name, data = penguins2)
+
+levene_penguin
+
+# H0: There is NO DIFFERENCE in variances; variances are EQUAL
+# HA: Variances are NOT equal
+
+# there is no significant difference in variances across species.
+
+
+```
+
+One-way ANOVA for penguin flipper lengths by species (common_name)
+
+```{r}
+
+# H0: The means accross all groups are equal
+# HA: At least two group means differ significantly
+
+penguin_aov <- aov(flipper_length ~ common_name, data = penguins2)
+
+summary(penguin_aov)
+
+# Post-hoc testing by Tukey's HSD
+
+
+# H0: There is no significant difference in pairwise means
+# HA: there IS a significant difference in pairwise means
+penguin_ph <- TukeyHSD(penguin_aov)
+
+penguin_ph
+
+# aov.test function in the 'onewaytests' package DOES allow for inline references
+```
+Statement:
+Mean flipper length of female penguins differed significantly for all species studied (one-way anova, F(df) = statistic, p < 0.001, $\alpha$ = 0.05 with post-hoc Tukey's HSD, $\alpha$ = 0.05)
